@@ -69,8 +69,8 @@ To run the Video Highlight Generator:
 
     Run the script to generate the highlight reel.
 
-**Watch the video generated from this script: **https://drive.google.com/file/d/12juBEtaszYCqKz7bsl4lAUTOaYxO8On_/view?usp=sharing
-**Watch the video demo of the script execution:**https://drive.google.com/file/d/106T4JU9xtj45imyTl3u_S8EjFRhTiCWy/view?usp=sharing
+**Watch the video generated from this script:** https://drive.google.com/file/d/12juBEtaszYCqKz7bsl4lAUTOaYxO8On_/view?usp=sharing
+**Watch the video demo of the script execution:** https://drive.google.com/file/d/106T4JU9xtj45imyTl3u_S8EjFRhTiCWy/view?usp=sharing
 
 ## **Conclusion**
 
