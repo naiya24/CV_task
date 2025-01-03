@@ -1,0 +1,156 @@
+import moviepy.editor as mp
+from moviepy.video.fx import resize, speedx, colorx
+import numpy as np
+from datetime import datetime
+
+
+class VideoProcessor:
+    definit__(self):
+        self.supported_platforms = {
+            'instagram_story': (1080, 1920),
+            'instagram_reel': (1080, 1920),
+            'youtube_shorts': (1080, 1920),
+            'tiktok': (1080, 1920),
+        }
+
+        self.max_durations = {
+            'instagram_story': 15,
+            'instagram_reel': 60,
+            'youtube_shorts': 60,
+            'tiktok': 60,
+        }
+
+    def load_video(self, input_path):
+        try:
+            return mp.VideoFileClip(input_path)
+        except Exception as e:
+            raise Exception(f"Error loading video: {str(e)}")
+
+    def get_interesting_segment(self, clip, duration):
+        if clip.duration <= duration:
+            return clip
+
+        frame_samples = 20
+        times = np.linspace(0, clip.duration, frame_samples)
+        frames = [clip.get_frame(t) for t in times]
+
+        diffs = []
+        for i in range(len(frames) - 1):
+            diff = np.mean(np.abs(frames[i + 1] - frames[i]))
+            diffs.append((diff, times[i]))
+
+        diffs.sort(reverse=True, key=lambda x: x[0])
+        start_time = max(0, diffs[0][1] - duration / 2)
+        end_time = min(clip.duration, start_time + duration)
+
+        return clip.subclip(start_time, end_time)
+
+    def resize_for_platform(self, clip, platform):
+        target_size = self.supported_platforms[platform]
+        aspect_ratio = clip.size[0] / clip.size[1]
+        target_aspect = target_size[0] / target_size[1]
+
+        if aspect_ratio > target_aspect:
+            new_width = target_size[0]
+            new_height = int(new_width / aspect_ratio)
+        else:
+            new_height = target_size[1]
+            new_width = int(new_height * aspect_ratio)
+
+        resized_clip = resize.resize(clip, (new_width, new_height))
+
+        background = mp.ColorClip(target_size, color=(0, 0, 0))
+        background = background.set_duration(resized_clip.duration)
+
+        x_center = (target_size[0] - new_width) // 2
+        y_center = (target_size[1] - new_height) // 2
+
+        final_clip = mp.CompositeVideoClip(
+            [background, resized_clip.set_position((x_center, y_center))])
+
+        return final_clip
+
+    def apply_effects(self, clip, effects=None):
+        if not effects:
+            return clip
+
+        if 'speed' in effects:
+            clip = clip.fx(speedx.speedx, effects['speed'])
+
+        if 'brightness' in effects:
+            clip = clip.fx(colorx.colorx, effects['brightness'])
+
+        return clip
+
+    def add_audio(self, clip, audio_path=None, background_music_volume=0.5):
+        if not audio_path:
+            return clip
+
+        try:
+            background_music = mp.AudioFileClip(audio_path)
+
+            if background_music.duration < clip.duration:
+                background_music = mp.concatenate_audioclips([background_music] *
+                                                             int(np.ceil(clip.duration / background_music.duration)))
+
+            background_music = background_music.subclip(0, clip.duration)
+
+            original_audio = clip.audio
+            background_music = background_music.volumex(background_music_volume)
+
+            final_audio = mp.CompositeAudioClip([
+                original_audio,
+                background_music
+            ])
+
+            return clip.set_audio(final_audio)
+
+        except Exception as e:
+            print(f"Warning: Could not add background music: {str(e)}")
+            return clip
+
+    def process_video(self, input_path, output_path=None, platform='instagram_reel',
+                      duration=30, effects=None, audio_path=None):
+
+        if platform not in self.supported_platforms:
+            raise ValueError(f"Unsupported platform. Choose from: {list(self.supported_platforms.keys())}")
+
+        if output_path is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = f"processed_video_{timestamp}.mp4"
+
+        clip = self.load_video(input_path)
+
+        duration = min(duration, self.max_durations[platform])
+        clip = self.get_interesting_segment(clip, duration)
+
+        clip = self.resize_for_platform(clip, platform)
+        clip = self.apply_effects(clip, effects)
+        clip = self.add_audio(clip, audio_path)
+
+        try:
+            clip.write_videofile(
+                output_path,
+                codec='libx264',
+                audio_codec='aac',
+                fps=30
+            )
+            print(f"Video successfully processed and saved to: {output_path}")
+
+        finally:
+            clip.close()
+
+
+if __name__ == "__main__":
+    processor = VideoProcessor()
+
+    processor.process_video(
+        input_path="VID_20230416_200704.mp4",
+        platform="instagram_reel",
+        duration=30,
+        effects={
+            'speed': 1.5,
+            'brightness': 1.2
+        },
+        audio_path="background_music.mp3"
+    )
