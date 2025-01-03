@@ -1,0 +1,74 @@
+import random
+import time
+import os
+
+class BottleFlipGame:
+    def __init__(self):
+        self.score = 0
+        self.high_score = 0
+        self.consecutive_flips = 0
+        
+    def clear_screen(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+        
+    def flip_animation(self):
+        animations = ['│', '/', '─', '\\']
+        for _ in range(random.randint(5, 10)):
+            for frame in animations:
+                print(f"\rFlipping bottle {frame}", end="")
+                time.sleep(0.1)
+        print("\r", end="")
+    
+    def calculate_flip_success(self, power):
+        optimal_power = 5
+        difference = abs(optimal_power - power)
+        base_chance = 0.4
+        
+        success_chance = base_chance - (difference * 0.05)
+        return random.random() < success_chance
+    
+    def get_power_input(self):
+        while True:
+            try:
+                power = float(input("\nEnter flip power (1-10): "))
+                if 1 <= power <= 10:
+                    return power
+                print("Please enter a number between 1 and 10.")
+            except ValueError:
+                print("Please enter a valid number.")
+    
+    def play_game(self):
+        while True:
+            self.clear_screen()
+            print("=== Bottle Flip Challenge ===")
+            print(f"Current Score: {self.score}")
+            print(f"High Score: {self.high_score}")
+            print(f"Consecutive Flips: {self.consecutive_flips}")
+            print("\nTip: Use power between 1-10 (5 is optimal)")
+            
+            power = self.get_power_input()
+            
+            self.flip_animation()
+            
+            if self.calculate_flip_success(power):
+                self.score += 1
+                self.consecutive_flips += 1
+                if self.score > self.high_score:
+                    self.high_score = self.score
+                print("\n🎉 Perfect landing! The bottle landed upright!")
+            else:
+                print("\n💥 Oh no! The bottle fell over!")
+                self.consecutive_flips = 0
+                
+            if self.consecutive_flips >= 3:
+                print(f"Amazing! {self.consecutive_flips} flips in a row!")
+                
+            play_again = input("\nPlay again? (y/n): ").lower()
+            if play_again != 'y':
+                print(f"\nFinal Score: {self.score}")
+                print(f"High Score: {self.high_score}")
+                break
+
+if __name__ == "__main__":
+    game = BottleFlipGame()
+    game.play_game()
